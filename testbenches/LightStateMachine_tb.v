@@ -12,16 +12,16 @@ module  light_state_machine_tb();
 reg reset, issue, clock;
 wire red_light_ns, green_light_ns, yellow_light_ns, left_turn_light_ns, pedestrian_light_ns;
 wire red_light_ew, green_light_ew, yellow_light_ew, left_turn_light_ew, pedestrian_light_ew;
-
+wire [31:0] counter1, counter2;
 
 
 light_state_machine DUT1(.in_reset_state(1'b0), .in_reset(reset), .in_issue(issue), .in_clock(clock), 
 .out_red_light(red_light_ns), .out_green_light(green_light_ns), .out_yellow_light(yellow_light_ns), 
-.out_left_turn_light(left_turn_light_ns), .out_pedestrian_light(pedestrian_light_ns));
+.out_left_turn_light(left_turn_light_ns), .out_pedestrian_light(pedestrian_light_ns), .counter(counter1));
 
 light_state_machine DUT2(.in_reset_state(1'b1), .in_reset(reset), .in_issue(issue), .in_clock(clock), 
 .out_red_light(red_light_ew), .out_green_light(green_light_ew), .out_yellow_light(yellow_light_ew), 
-.out_left_turn_light(left_turn_light_ew), .out_pedestrian_light(pedestrian_light_ew));
+.out_left_turn_light(left_turn_light_ew), .out_pedestrian_light(pedestrian_light_ew), .counter(counter2));
 
 
 initial begin
