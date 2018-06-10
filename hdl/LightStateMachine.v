@@ -7,7 +7,7 @@ Include control for pedestrian walk/don't walk signal and left turn arrow
 
 module light_state_machine(in_reset_state, in_reset, in_issue,
 in_clock, out_red_light, out_green_light, out_yellow_light, out_left_turn_light,
-out_pedestrian_light);
+out_pedestrian_light, counter);
 
 input in_reset, in_issue, in_clock;
 input in_reset_state; // This input decides which state is selected upon reset
@@ -26,7 +26,7 @@ assign config_time_scaler = in_reset_state ? 32'd500000000 : 32'd0;
 parameter RESET_TO_RED = 1'b0, RESET_TO_GREEN_LEFT_TURN = 1'b1;
 
 // Used to count ticks of the clock to determine timings for lights
-reg [31:0] counter;
+output reg [31:0] counter;
 
 // States constants
 parameter  RED = 3'b000, LEFT_TURN = 3'b001, GREEN_PEDES = 3'b010,
@@ -126,44 +126,48 @@ always@(posedge in_clock or posedge in_reset or posedge in_issue) begin
         case (in_reset_state)
         RESET_TO_RED: begin
         state <= RED;
+        counter <= (RED_ON_CLOCK_TICKS_COUNT + config_time_scaler);
         end
         RESET_TO_GREEN_LEFT_TURN: begin
         state <= LEFT_TURN;
+        counter <= LEFT_TURN_ON_CLOCK_TICK_COUNT;
         end
         endcase
-		  counter <= RESET_CLOCK_TICK_COUNT;
     end
     else begin
-        counter <= counter + 1;  // Update the counter so we can use it for timing
-        case (state)
+		  // Guard so that display always displays same when in issue state
+		  if (state != ISSUE) begin
+		  counter <= counter - 1;
+        end
+		  case (state)
         RED: begin
-            if (counter >= (RED_ON_CLOCK_TICKS_COUNT +  config_time_scaler)) begin
-                state <= LEFT_TURN;
-                counter <= RESET_CLOCK_TICK_COUNT;
+            if (counter == 32'd0) begin
+            state <= LEFT_TURN;
+            counter <= LEFT_TURN_ON_CLOCK_TICK_COUNT;
             end
         end
         LEFT_TURN: begin
-            if (counter >= LEFT_TURN_ON_CLOCK_TICK_COUNT) begin
+            if (counter == 32'd0) begin
                 state <= GREEN_PEDES;
-                counter <= RESET_CLOCK_TICK_COUNT;
+                counter <= GREEN_PEDES_ON_CLOCK_TICKS_COUNT;
             end
         end
         GREEN_PEDES: begin
-            if (counter >= GREEN_PEDES_ON_CLOCK_TICKS_COUNT) begin
+            if (counter == 32'd0) begin
                 state <= GREEN;
-                counter <= RESET_CLOCK_TICK_COUNT;
+                counter <= (GREEN_ON_WITHOUT_PEDESTRIAN_CLOCK_TICKS_COUNT - config_time_scaler);
             end
         end
         GREEN: begin
-            if (counter >= (GREEN_ON_WITHOUT_PEDESTRIAN_CLOCK_TICKS_COUNT - config_time_scaler)) begin
+            if (counter == 32'd0) begin
                 state <= YELLOW;
-                counter <= RESET_CLOCK_TICK_COUNT;
+                counter <= YELLOW_ON_CLOCK_TICKS_COUNT;
             end
         end
         YELLOW: begin
-            if (counter >= YELLOW_ON_CLOCK_TICKS_COUNT) begin
+            if (counter == 32'd0) begin
                 state <= RED;
-                counter <= RESET_CLOCK_TICK_COUNT;
+                counter <= (RED_ON_CLOCK_TICKS_COUNT + config_time_scaler);
             end
         end
         endcase
